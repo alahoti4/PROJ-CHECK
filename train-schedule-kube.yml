@@ -9,7 +9,7 @@ spec:
   ports:
   - protocol: TCP
     port: 1456 
-    nodePort: 1456 
+    nodePort: 30007 
 
 ---
 
