@@ -9,8 +9,7 @@ spec:
     track: canary
   ports:
   - protocol: TCP
-    port: 1456 
-    nodePort: 32007 
+    port: 1457
 
 ---
 
@@ -34,13 +33,13 @@ spec:
     spec:
       containers:
       - name: train-schedule
-        image: alahoti4/20210902 
+        image: alahoti4/202109021 
         ports:
-        - containerPort: 1456
+        - containerPort: 1457
         livenessProbe:
           httpGet:
             path: /
-            port: 1456 
+            port: 1457
           initialDelaySeconds: 15
           timeoutSeconds: 1
           periodSeconds: 10
