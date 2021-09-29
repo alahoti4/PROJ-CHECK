@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: train-schedule
-        image: alahoti4/202109021 
+        image: alahoti4/2021090212 
         ports:
         - containerPort: 1457
         livenessProbe:
