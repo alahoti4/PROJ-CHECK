@@ -31,7 +31,8 @@ pipeline {
             steps{
                 script{
                     try{
-                             sh 'kubectl apply -f *.yml'
+                           sh 'kubectl create -f train-schedule-kube.yml'
+                           sh 'kubectl create -f train-schedule-kube-canary.yml'
                     }
                     catch(error)
                     {
