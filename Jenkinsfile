@@ -1,79 +1,51 @@
 pipeline {
     agent any
-    environment {
-        //be sure to replace "bhavukm" with your own Docker Hub username
-        DOCKER_IMAGE_NAME = "bhavukm/train-schedule"
-    }
     stages {
-        stage('Build') {
-            steps {
-                echo 'Running build automation'
-                sh './gradlew build --no-daemon'
-                archiveArtifacts artifacts: 'dist/trainSchedule.zip'
+        stage('PULL GIT'){
+            steps{
+              checkout([$class: 'GitSCM', branches: [[name: '**']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/alahoti4/PROJ-CHECK']]])  
             }
+            
         }
-        stage('Build Docker Image') {
-            when {
-                branch 'master'
-            }
-            steps {
-                script {
-                    app = docker.build(DOCKER_IMAGE_NAME)
-                    app.inside {
-                        sh 'echo Hello, World!'
-                    }
+        stage('Build Docker image'){
+            steps{
+                script{
+               sh 'docker build -t alahoti4/202109021231 .' 
                 }
             }
+            
         }
-        stage('Push Docker Image') {
-            when {
-                branch 'master'
+        stage('Push docker image'){
+        steps{
+            script{
+                withCredentials([string(credentialsId: 'alahoti4', variable: 'dockerhubpwd')]) {
+                sh 'docker login -u alahoti4 -p ${dockerhubpwd}'
+}
+                 sh 'docker push alahoti4/202109021231'
             }
-            steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker_hub_login') {
-                        app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
+                
+            }
+        }
+        
+        stage('Deploy to Kubernetes'){
+            steps{
+                script{
+                    try{
+                             sh 'kubectl apply -f train-schedule-kube.yml'
+                             sh 'kubectl apply -f train-schedule-kube-canary.yml'
+                    }
+                    catch(error)
+                    {
+                           sh 'kubectl apply -f train-schedule-kube.yml'
+                           sh 'kubectl apply -f train-schedule-kube-canary.yml'
+                        
+                    }
+                    
+                         }
+                    }
+                   
                     }
                 }
-            }
-        }
-        stage('CanaryDeploy') {
-            when {
-                branch 'master'
-            }
-            environment { 
-                CANARY_REPLICAS = 1
-            }
-            steps {
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
-            }
-        }
-        stage('DeployToProduction') {
-            when {
-                branch 'master'
-            }
-            environment { 
-                CANARY_REPLICAS = 0
-            }
-            steps {
-                input 'Deploy to Production?'
-                milestone(1)
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube.yml',
-                    enableConfigSubstitution: true
-                )
-            }
-        }
+       
     }
 }
